@@ -15,10 +15,15 @@
   },
   "require": {
     "php": ">=8.4",
-    "toppy/twig-streaming": "^0.2",
+    "toppy/twig-streaming": "*@dev",
     "amphp/amp": "^3.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^12.5"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "0.x-dev"
+    }
   }
 }
