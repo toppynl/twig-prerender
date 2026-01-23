@@ -1,0 +1,40 @@
+{
+    "name": "toppy/twig-prerender",
+    "description": "Deferred Twig includes with skeleton placeholders",
+    "type": "library",
+    "license": "proprietary",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {"type": "path", "url": "../async-view-model", "options": {"symlink": true}},
+        {"type": "path", "url": "../twig-streaming", "options": {"symlink": true}}
+    ],
+    "autoload": {
+        "psr-4": {
+            "Toppy\\TwigPrerender\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Toppy\\TwigPrerender\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=8.4",
+        "toppy/twig-streaming": "*@dev",
+        "amphp/amp": "^3.0",
+        "symfony/twig-bundle": "^8.0",
+        "symfony/http-kernel": "^8.0",
+        "symfony/dependency-injection": "^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.5"
+    },
+    "extra": {
+        "symfony": {
+            "bundles": {
+                "Toppy\\TwigPrerender\\Bundle\\ToppyTwigPrerenderBundle": ["all"]
+            }
+        }
+    }
+}
