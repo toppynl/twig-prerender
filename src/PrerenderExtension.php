@@ -39,18 +39,6 @@ final class PrerenderExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction(
-                'include_async',
-                [$this, 'includeAsync'],
-                [
-                    'needs_environment' => true,
-                    'needs_context' => true,
-                    'is_safe' => ['html'],
-                    'deprecated' => true,
-                    'deprecating_package' => 'app',
-                    'alternative' => '{% include "template" prerender(false) %}',
-                ],
-            ),
             new TwigFunction('prerender', fn(bool $value) => $value),
             new TwigFunction('defer', fn(bool $value) => $value),
             new TwigFunction('skeleton', fn(string $path) => $path),
@@ -95,7 +83,11 @@ final class PrerenderExtension extends AbstractExtension
         array $context,
     ): string {
         if ($this->slotRegistry === null || $this->slotRenderer === null) {
-            throw new \RuntimeException('SlotRegistry and SlotRenderer are required for defer(true)');
+            throw new \RuntimeException(
+                'defer(true) requires the twig-streaming package. '
+                . 'Install with: composer require toppy/twig-streaming '
+                . 'or use prerender(false) for client-side lazy loading.'
+            );
         }
 
         // Generate or use custom ID
@@ -125,14 +117,6 @@ final class PrerenderExtension extends AbstractExtension
         $this->slotRegistry->register($slot, $contentFuture);
 
         return $this->slotRenderer->renderPlaceholder($slot, $skeletonHtml);
-    }
-
-    /**
-     * @deprecated Use {% include "template" prerender(false) %} instead
-     */
-    public function includeAsync(Environment $twig, array $context, string $template, ?string $skeleton = null): string
-    {
-        return $this->renderPrerenderPlaceholder($twig, $template, $skeleton, $context);
     }
 
     private function resolveSkeleton(Environment $twig, array $context, string $template, ?string $skeleton): string

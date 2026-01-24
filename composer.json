@@ -15,11 +15,13 @@
   },
   "require": {
     "php": ">=8.4",
-    "toppy/twig-streaming": "*@dev",
     "amphp/amp": "^3.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^12.5"
+  },
+  "suggest": {
+    "toppy/twig-streaming": "Required for defer(true) server-side streaming slots"
   },
   "extra": {
     "branch-alias": {
