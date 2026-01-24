@@ -22,10 +22,5 @@
   },
   "suggest": {
     "toppy/twig-streaming": "Required for defer(true) server-side streaming slots"
-  },
-  "extra": {
-    "branch-alias": {
-      "dev-main": "0.x-dev"
-    }
   }
 }
