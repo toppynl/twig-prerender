@@ -5,12 +5,12 @@
   "license": "proprietary",
   "autoload": {
     "psr-4": {
-      "Toppy\\TwigPrerender\\": "src/"
+      "Toppy\\TwigPrerender\\": ""
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Toppy\\TwigPrerender\\Tests\\": "tests/"
+      "Toppy\\TwigPrerender\\Tests\\": "Tests/"
     }
   },
   "require": {
@@ -22,5 +22,10 @@
   },
   "suggest": {
     "toppy/twig-streaming": "Required for defer(true) server-side streaming slots"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "0.x-dev"
+    }
   }
 }
