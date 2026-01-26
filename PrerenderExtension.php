@@ -29,6 +29,7 @@ final class PrerenderExtension extends AbstractExtension
         private readonly ?SlotRenderer $slotRenderer = null,
     ) {}
 
+    #[\Override]
     public function getTokenParsers(): array
     {
         return [
@@ -36,19 +37,28 @@ final class PrerenderExtension extends AbstractExtension
         ];
     }
 
+    #[\Override]
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('prerender', fn(bool $value) => $value),
-            new TwigFunction('defer', fn(bool $value) => $value),
-            new TwigFunction('skeleton', fn(string $path) => $path),
-            new TwigFunction('fallback', fn(string $value) => $value),
-            new TwigFunction('id', fn(string $value) => $value),
+            new TwigFunction('prerender', static fn(bool $value) => $value),
+            new TwigFunction('defer', static fn(bool $value) => $value),
+            new TwigFunction('skeleton', static fn(string $path) => $path),
+            new TwigFunction('fallback', static fn(string $value) => $value),
+            new TwigFunction('id', static fn(string $value) => $value),
         ];
     }
 
     /**
      * Called by PrerenderIncludeNode at runtime.
+     *
+     * @param array<string, mixed> $context
+     *
+     * @throws \Random\RandomException When random_bytes fails to generate IV
+     * @throws \JsonException When context cannot be JSON encoded
+     * @throws \RuntimeException When OpenSSL encryption fails
+     * @throws \Twig\Error\SyntaxError When skeleton template has syntax errors
+     * @throws \Twig\Error\RuntimeError When skeleton template has runtime errors
      */
     public function renderPrerenderPlaceholder(
         Environment $twig,
@@ -73,6 +83,10 @@ final class PrerenderExtension extends AbstractExtension
      * Called by DeferIncludeNode at runtime - renders slot placeholder.
      *
      * @param array<string, mixed> $context
+     *
+     * @throws \RuntimeException When twig-streaming package is not installed
+     * @throws \Twig\Error\SyntaxError When skeleton template has syntax errors
+     * @throws \Twig\Error\RuntimeError When skeleton template has runtime errors
      */
     public function renderDeferredPlaceholder(
         Environment $twig,
@@ -86,7 +100,7 @@ final class PrerenderExtension extends AbstractExtension
             throw new \RuntimeException(
                 'defer(true) requires the twig-streaming package. '
                 . 'Install with: composer require toppy/twig-streaming '
-                . 'or use prerender(false) for client-side lazy loading.'
+                . 'or use prerender(false) for client-side lazy loading.',
             );
         }
 
@@ -111,7 +125,7 @@ final class PrerenderExtension extends AbstractExtension
 
         // Create Future that will render the actual template content when awaited
         // Using async() to defer the rendering until streamSlotFragments() awaits it
-        $contentFuture = async(fn() => $twig->render($template, $context));
+        $contentFuture = async(static fn() => $twig->render($template, $context));
 
         // Register slot with its content Future
         $this->slotRegistry->register($slot, $contentFuture);
@@ -119,30 +133,39 @@ final class PrerenderExtension extends AbstractExtension
         return $this->slotRenderer->renderPlaceholder($slot, $skeletonHtml);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     *
+     * @throws \Twig\Error\SyntaxError When a skeleton template has syntax errors
+     * @throws \Twig\Error\RuntimeError When a skeleton template has runtime errors
+     */
     private function resolveSkeleton(Environment $twig, array $context, string $template, ?string $skeleton): string
     {
         // 1. Explicit skeleton parameter
         if ($skeleton !== null) {
             try {
                 return $twig->render($skeleton, $context);
+
+                // @mago-ignore lint:no-empty-catch-clause - Explicit skeleton not found, fallthrough to convention
             } catch (LoaderError) {
-                // Template not found, fall through
             }
         }
 
         // 2. Convention: template.skeleton.html.twig
-        $conventionPath = str_replace('.html.twig', '.skeleton.html.twig', $template);
+        $conventionPath = str_replace(search: '.html.twig', replace: '.skeleton.html.twig', subject: $template);
         try {
             return $twig->render($conventionPath, $context);
+
+            // @mago-ignore lint:no-empty-catch-clause - Convention skeleton not found, fallthrough to default
         } catch (LoaderError) {
-            // Template not found, fall through
         }
 
         // 3. Default fallback
         try {
             return $twig->render('skeletons/default.html.twig', $context);
+
+            // @mago-ignore lint:no-empty-catch-clause - Default skeleton not found, use hardcoded fallback
         } catch (LoaderError) {
-            // Template not found, fall through
         }
 
         // 4. Hardcoded fallback

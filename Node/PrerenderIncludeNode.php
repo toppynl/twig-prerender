@@ -43,6 +43,7 @@ final class PrerenderIncludeNode extends Node implements NodeOutputInterface
         );
     }
 
+    #[\Override]
     public function compile(Compiler $compiler): void
     {
         $compiler->addDebugInfo($this);

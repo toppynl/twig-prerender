@@ -14,6 +14,7 @@ use Twig\Node\IncludeNode;
 use Twig\Node\Node;
 use Twig\Token;
 use Twig\TokenParser\AbstractTokenParser;
+use Twig\TokenStream;
 
 /**
  * Extends Twig's include to support prerender(false) and defer(true) syntax.
@@ -25,8 +26,11 @@ use Twig\TokenParser\AbstractTokenParser;
  *   {% include 'template.html.twig' defer(true) skeleton('s.twig') fallback('error.twig') %}
  *   {% include 'template.html.twig' defer(true) skeleton('s.twig') id('custom-id') %}
  */
+// @mago-ignore analysis:mixed-assignment,mixed-operand - Twig Node::getAttribute() returns mixed; vendor limitation
 final class IncludeTokenParser extends AbstractTokenParser
 {
+    // @mago-ignore lint:sensitive-parameter - Token is a Twig lexer token, not a security token
+    #[\Override]
     public function parse(Token $token): Node
     {
         $expr = $this->parser->parseExpression();
@@ -49,22 +53,21 @@ final class IncludeTokenParser extends AbstractTokenParser
             $funcName = $funcExpr->getAttribute('name');
             $args = $funcExpr->getNode('arguments');
 
-            if ($funcName === 'prerender' && $args->count() > 0) {
-                $firstArg = $args->getIterator()->current();
-                if ($firstArg instanceof ConstantExpression) {
-                    $prerender = (bool) $firstArg->getAttribute('value');
-                }
-            } elseif ($funcName === 'defer' && $args->count() > 0) {
-                $firstArg = $args->getIterator()->current();
-                if ($firstArg instanceof ConstantExpression) {
-                    $defer = (bool) $firstArg->getAttribute('value');
-                }
-            } elseif ($funcName === 'skeleton' && $args->count() > 0) {
-                $skeleton = $args->getIterator()->current();
-            } elseif ($funcName === 'fallback' && $args->count() > 0) {
-                $fallback = $args->getIterator()->current();
-            } elseif ($funcName === 'id' && $args->count() > 0) {
-                $customId = $args->getIterator()->current();
+            // Get first argument from the arguments node
+            $firstArg = $args->hasNode('0') ? $args->getNode('0') : null;
+
+            if ($funcName === 'prerender' && $firstArg instanceof ConstantExpression) {
+                $value = $firstArg->getAttribute('value');
+                $prerender = (bool) $value;
+            } elseif ($funcName === 'defer' && $firstArg instanceof ConstantExpression) {
+                $value = $firstArg->getAttribute('value');
+                $defer = (bool) $value;
+            } elseif ($funcName === 'skeleton' && $firstArg instanceof AbstractExpression) {
+                $skeleton = $firstArg;
+            } elseif ($funcName === 'fallback' && $firstArg instanceof AbstractExpression) {
+                $fallback = $firstArg;
+            } elseif ($funcName === 'id' && $firstArg instanceof AbstractExpression) {
+                $customId = $firstArg;
             }
         }
 
@@ -103,7 +106,7 @@ final class IncludeTokenParser extends AbstractTokenParser
         return new IncludeNode($expr, $variables, $only, $ignoreMissing, $token->getLine());
     }
 
-    private function isModifierFunction($stream): bool
+    private function isModifierFunction(TokenStream $stream): bool
     {
         if (!$stream->test(Token::NAME_TYPE)) {
             return false;
@@ -111,7 +114,7 @@ final class IncludeTokenParser extends AbstractTokenParser
 
         $name = $stream->getCurrent()->getValue();
 
-        return in_array($name, ['prerender', 'defer', 'skeleton', 'fallback', 'id'], true);
+        return is_string($name) && in_array($name, ['prerender', 'defer', 'skeleton', 'fallback', 'id'], strict: true);
     }
 
     /**
@@ -142,6 +145,7 @@ final class IncludeTokenParser extends AbstractTokenParser
         return [$variables, $only, $ignoreMissing];
     }
 
+    #[\Override]
     public function getTag(): string
     {
         return 'include';
