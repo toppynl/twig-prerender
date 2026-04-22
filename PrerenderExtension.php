@@ -96,7 +96,9 @@ final class PrerenderExtension extends AbstractExtension
         ?string $customId,
         array $context,
     ): string {
-        if ($this->slotRegistry === null || $this->slotRenderer === null) {
+        $slotRegistry = $this->slotRegistry;
+        $slotRenderer = $this->slotRenderer;
+        if ($slotRegistry === null || $slotRenderer === null) {
             throw new \RuntimeException(
                 'defer(true) requires the twig-streaming package. '
                 . 'Install with: composer require toppy/twig-streaming '
@@ -128,9 +130,9 @@ final class PrerenderExtension extends AbstractExtension
         $contentFuture = async(static fn() => $twig->render($template, $context));
 
         // Register slot with its content Future
-        $this->slotRegistry->register($slot, $contentFuture);
+        $slotRegistry->register($slot, $contentFuture);
 
-        return $this->slotRenderer->renderPlaceholder($slot, $skeletonHtml);
+        return $slotRenderer->renderPlaceholder($slot, $skeletonHtml);
     }
 
     /**
